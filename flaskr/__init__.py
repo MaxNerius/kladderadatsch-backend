@@ -1,6 +1,7 @@
 import os
-
 from flask import Flask
+
+from . import db
 
 def create_app(test_config=None):
     app = Flask(__name__, instance_relative_config=True)
@@ -22,6 +23,9 @@ def create_app(test_config=None):
     except OSError:
         pass
 
+    # close the database connection on app teardown
+    app.teardown_appcontext(db.close_db)
+
     # a simple page that says hello
     @app.route('/hello')
     def hello():
@@ -30,5 +34,15 @@ def create_app(test_config=None):
     @app.route('/')
     def index():
         return 'Henlo!'
+
+    @app.route('/notes')
+    def notes():
+        conn = db.get_db_connection()
+        cursor = conn.cursor()
+        cursor.execute('SELECT * from notes;')
+        results = cursor.fetchall()
+        cursor.close()
+
+        return f"got {results} from the db!"
 
     return app
